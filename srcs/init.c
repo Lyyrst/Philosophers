@@ -29,7 +29,7 @@ static int	ft_atoi(const char *str)
 	return (ret);
 }
 
-static t_philo	*init_philo(int	n, t_data *d)
+static t_philo	*init_philo(int	n, t_data *d, t_main *main, t_forks *f)
 {
 	t_philo	*philo;
 	int		i;
@@ -38,67 +38,70 @@ static t_philo	*init_philo(int	n, t_data *d)
 	if (!philo)
 		return (0);
 	i = 0;
+	philo[0].left = &f[0];
+	philo[0].right = &f[d->n - 1];
 	while (i < n)
 	{
-		philo[i].left = malloc(sizeof(pthread_mutex_t));
-		philo[i].right = malloc(sizeof(pthread_mutex_t));
-		if (!philo[i].left || !philo[i].right)
-			return (0);
-		pthread_mutex_init(philo[i].left, 0);
-		pthread_mutex_init(philo[i].right, 0);
-		if (i == d->n - 1)
+		if (i > 0)
 		{
-			philo[i].left = philo[0].right;
-			philo[i].right = philo[i].left;
-		}
-		else
-		{
-			philo[i].left = philo[i].right;
-			philo[i].right = philo[i + 1].left;
+			philo[i].left = &f[i];
+			philo[i].right = &f[i - 1];
 		}
 		philo[i].id = i;
-		philo[i].status = THINK;
-		philo[i].last_meal = 0;
+		philo[i].to_die = d->t_die;
 		philo[i].d = d;
+		philo[i].main = main;
 		philo[i].meals = 0;
+		philo[i].is_eating = 0;
+		philo[i].dead = 0;
 		pthread_mutex_init(&philo[i].mutex, NULL);
 		i++;
 	}
 	return (philo);
 }
 
-static unsigned long	get_start()
+static void	init_basic_data(char **argv, t_data **d)
 {
-	struct timeval t;
-	gettimeofday(&t, NULL);
-	return (t.tv_sec * 1000 + t.tv_usec / 1000);
+	(*d)->n = ft_atoi(argv[1]);
+	(*d)->t_die = ft_atoi(argv[2]);
+	(*d)->to_eat = ft_atoi(argv[3]);
+	(*d)->t_sleep = ft_atoi(argv[4]);
+	(*d)->all_eat = 0;
+	(*d)->dead = 0;
+	if (argv[5])
+		(*d)->n_meal = ft_atoi(argv[5]);
+	else
+		(*d)->n_meal = -1;
 }
 
 static t_data	*init_data(char **argv)
 {
 	t_data	*d;
-	int		i;
 
 	d = malloc(sizeof(t_data));
 	if (!d)
 		return (0);
-	d->n = ft_atoi(argv[1]);
-	d->t_die = ft_atoi(argv[2]);
-	d->to_eat = ft_atoi(argv[3]);
-	d->t_sleep = ft_atoi(argv[4]);
-	d->start = get_start();
-	d->done = malloc(sizeof(int) * d->n);
-	if (!d->done)
+	init_basic_data(argv, &d);
+	pthread_mutex_init(&d->print_mutex, NULL);
+	pthread_mutex_init(&d->mutex, NULL);
+	return (d);
+}
+
+static t_forks	*init_forks(t_data *d)
+{
+	t_forks	*f;
+	int		i;
+
+	f = malloc(sizeof(t_forks) * d->n);
+	if (!f)
 		return (0);
 	i = -1;
 	while (++i < d->n)
-		d->done = 0;
-	if (argv[5])
-		d->n_meal = ft_atoi(argv[5]);
-	else
-		d->n_meal = 0;
-	pthread_mutex_init(&d->print_mutex, NULL);
-	return (d);
+	{
+		pthread_mutex_init(&f->fork, NULL);
+		f->is_taken = 0;
+	}
+	return (f);
 }
 
 void	init_struct(t_main **main, char **argv)
@@ -109,7 +112,12 @@ void	init_struct(t_main **main, char **argv)
 	(*main)->d = init_data(argv);
 	if (!(*main)->d)
 		exit_handler("A memory allocution has failed\n", 1, *main);
-	(*main)->p = init_philo((*main)->d->n, (*main)->d);
+	if ((*main)->d->n <= 0 || (*main)->d->t_die < 0 || (*main)->d->t_sleep < 0 || (*main)->d->to_eat < 0)
+		exit_handler("Wrong arguments\n", 1, *main);
+	(*main)->f = init_forks((*main)->d);
+	if (!(*main)->f)
+		exit_handler("A memory allocution has failed\n", 1, *main);
+	(*main)->p = init_philo((*main)->d->n, (*main)->d,*main, (*main)->f);
 	if (!(*main)->p)
 		exit_handler("A memory allocution has failed\n", 1, *main);
 }

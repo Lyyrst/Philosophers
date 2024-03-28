@@ -1,44 +1,12 @@
 #include "../Philo.h"
 
-static void	free_philo(t_philo *p, int n)
+void	fixed_sleep(unsigned long n, t_main *main)
 {
-	int	i;
-
-	i = -1;
-	if (!p)
-		return ;
-	while (++i < n)
-	{
-		pthread_mutex_destroy(p[i].left);
-		pthread_mutex_destroy(p[i].right);
-	}
-	free(p);
-}
-
-void	free_struct(t_main *main)
-{
-	if (!main)
-		return ;
-	free_philo(main->p, main->d->n);
-	if (main->d)
-		free(main->d);
-	free(main);
-}
-
-void	exit_handler(char *error, int n, t_main	*main)
-{
-	int	i;
-
-	i = 0;
-	if (error)
-	{
-		while (error[i])
-			write(2, &error[i++], 1);
-	}
-	free_struct(main);
-	if (n == 0)
-		exit(EXIT_SUCCESS);
-	exit(EXIT_FAILURE);
+	unsigned long	start;
+	
+	start = get_time(main);
+	while ((get_time(main) - start) < n)
+		usleep(n / 10);
 }
 
 static int	ft_isdigit(int c)

@@ -4,7 +4,10 @@ HEADERS = Philo.h
 
 CFILES = srcs/main.c \
 			srcs/utils.c \
-			srcs/init.c
+			srcs/init.c \
+			srcs/actions.c \
+			srcs/threads_function.c \
+			srcs/free.c
 
 OFILES = $(CFILES:.c=.o)
 
