@@ -1,11 +1,25 @@
-NAME = Philo
+# **************************************************************************** #
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    Makefile                                           :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: kbutor-b <kbutor-b@student.42.fr>          +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2024/04/08 09:34:13 by kbutor-b          #+#    #+#              #
+#    Updated: 2024/04/08 09:34:13 by kbutor-b         ###   ########.fr        #
+#                                                                              #
+# **************************************************************************** #
+
+NAME = philo
 
 HEADERS = Philo.h
 
 CFILES = srcs/main.c \
 			srcs/utils.c \
+			srcs/utils_bis.c \
 			srcs/init.c \
 			srcs/actions.c \
+			srcs/forks_action.c \
 			srcs/threads_function.c \
 			srcs/free.c
 
@@ -13,7 +27,7 @@ OFILES = $(CFILES:.c=.o)
 
 CC = gcc
 FLAGS = -Wall -Werror -Wextra
-GFLAGS =
+VFLAGS =
 
 %.o: %.c $(HEADERS)
 	$(CC) $(FLAGS) $(GFLAGS) -c -o $@ $<
@@ -32,8 +46,8 @@ all : $(NAME)
 $(NAME) : $(OFILES)
 	$(CC) $(OFILES) -o $(NAME)
 
-gdb : GFLAGS += -g 
-gdb : fclean all
+valgrind : GFLAGS += -pthread
+valgrind : all
 
 clean :
 	rm -rf $(OFILES)

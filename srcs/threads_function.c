@@ -1,40 +1,40 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   threads_function.c                                 :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: kbutor-b <kbutor-b@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/04/08 09:34:04 by kbutor-b          #+#    #+#             */
+/*   Updated: 2024/04/08 09:34:04 by kbutor-b         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../Philo.h"
 
-void	*check_meals(void *ptr)
+static void	start_day(t_philo *p)
 {
-	t_philo	*p;
-
-	p = (t_philo *)ptr;
-	while (p->d->dead == 0)
-	{
-		pthread_mutex_lock(&p->mutex);
-		if (p->d->all_eat >= p->d->n)
-			p->d->dead = 1;
-		pthread_mutex_unlock(&p->mutex);
-	}
-	return ((void *)0);
+	pthread_mutex_lock(&p->mutex);
+	print_status(p, "is thinking", 3);
+	p->to_die = get_time(p->main) + p->main->d->t_die;
+	pthread_mutex_unlock(&p->mutex);
 }
 
-static void	*night(void *ptr)
+static int	is_dead(t_philo *p)
 {
-	t_philo	*p;
-
-	p = (t_philo *)ptr;
-	while (p->d->dead == 0)
+	if (get_time(p->main) >= p->to_die)
 	{
-		pthread_mutex_lock(&p->mutex);
-		if (get_time(p->main) >= p->to_die && p->is_eating == 0)
-			print_status(p, "died", 4);
-		if (p->meals == p->d->n_meal)
-		{
-			pthread_mutex_lock(&p->d->mutex);
-			p->d->all_eat++;
-			p->meals++;
-			pthread_mutex_unlock(&p->d->mutex);
-		}
-		pthread_mutex_unlock(&p->mutex);
+		print_status(p, "died", 4);
+		return (1);
 	}
-	return ((void *)0);
+	return (0);
+}
+
+static int	is_full(t_philo *p)
+{
+	if (p->meals == p->main->d->n_meal)
+		return (1);
+	return (0);
 }
 
 void	*day(void *ptr)
@@ -42,14 +42,16 @@ void	*day(void *ptr)
 	t_philo	*p;
 
 	p = (t_philo *)ptr;
-	p->to_die = p->d->t_die + get_time(p->main);
-	if (p->id % 2 != 0)
-		fixed_sleep(p->d->to_eat, p->main);
-	if (pthread_create(&p->t, NULL, &night, (void *)p))
-		return ((void *)1);
-	while (p->d->dead == 0)
+	start_day(p);
+	while (1)
+	{
+		if (is_dead(p))
+			break ;
+		if (is_full(p))
+			break ;
+		if (any_death(p))
+			break ;
 		eat_sleep(p);
-	if (pthread_join(p->t, NULL))
-		return ((void *)1);
+	}
 	return ((void *)0);
 }
